@@ -142,3 +142,7 @@ dmypy.json
 *.zip
 *.html
 .DS_Store
+
+# dataset
+data/*
+dataset/*
