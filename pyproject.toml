@@ -1,0 +1,32 @@
+[project]
+name = "deim-v2"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "calflops>=0.3.2",
+    "faster-coco-eval>=1.6.7",
+    "onnx==1.19.0",
+    "onnxruntime-gpu==1.23.0",
+    "onnxsim==0.4.30",
+    "pyyaml>=6.0.3",
+    "scipy>=1.16.2",
+    "tensorboard>=2.20.0",
+    "torch==2.5.1",
+    "torchvision==0.20.1",
+    "transformers>=4.56.2",
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "torch-cu124" },
+]
+torchvision = [
+    { index = "torch-cu124" },
+]
+
+[[tool.uv.index]]
+name = "torch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
