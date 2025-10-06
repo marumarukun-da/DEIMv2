@@ -129,15 +129,7 @@ pip install -r requirements.txt
 
 To train on your custom dataset, you need to organize it in the COCO format. Follow the steps below to prepare your dataset:
 
-1. **Set `remap_mscoco_category` to `False`:**
-
-    This prevents the automatic remapping of category IDs to match the MSCOCO categories.
-
-    ```yaml
-    remap_mscoco_category: False
-    ```
-
-2. **Organize Images:**
+1. **Organize Images:**
 
     Structure your dataset directories as follows:
 
@@ -162,24 +154,46 @@ To train on your custom dataset, you need to organize it in the COCO format. Fol
     - **`images/val/`**: Contains all validation images.
     - **`annotations/`**: Contains COCO-formatted annotation files.
 
-3. **Convert Annotations to COCO Format:**
+2. **Convert Annotations to COCO Format:**
 
-    If your annotations are not already in COCO format, you'll need to convert them. You can use the following Python script as a reference or utilize existing tools:
+    If your annotations are not already in COCO format, you'll need to convert them.
+
+    **⚠️ Important:** Category IDs in your annotation files **must start from 0** (e.g., 0, 1, 2, ...), not 1. This is different from the standard COCO format where category IDs start from 1.
+
+    You can use the following Python script to remap category IDs:
 
     ```python
     import json
+    import shutil
 
-    def convert_to_coco(input_annotations, output_annotations):
-        # Implement conversion logic here
-        pass
+    for split in ['train', 'val']:
+        ann_file = f'./data/your_dataset/annotations/instances_{split}.json'
+        backup_file = f'{ann_file}.backup'
 
-    if __name__ == "__main__":
-        convert_to_coco('path/to/your_annotations.json', 'dataset/annotations/instances_train.json')
+        # Create backup
+        shutil.copy(ann_file, backup_file)
+
+        # Load annotations
+        with open(ann_file, 'r') as f:
+            data = json.load(f)
+
+        # Remap category IDs to 0-indexed
+        for cat in data['categories']:
+            cat['id'] -= 1
+
+        for ann in data['annotations']:
+            ann['category_id'] -= 1
+
+        # Save updated annotations
+        with open(ann_file, 'w') as f:
+            json.dump(data, f)
+
+        print(f'Updated {split}.json')
     ```
 
-4. **Update Configuration Files:**
+3. **Create Custom Dataset Configuration File:**
 
-    Modify your [custom_detection.yml](./configs/dataset/custom_detection.yml).
+    Modify `configs/dataset/custom_detection.yml` with your dataset information:
 
     ```yaml
     task: detection
@@ -188,15 +202,15 @@ To train on your custom dataset, you need to organize it in the COCO format. Fol
       type: CocoEvaluator
       iou_types: ['bbox', ]
 
-    num_classes: 777 # your dataset classes
-    remap_mscoco_category: False
+    num_classes: 2  # Set to your number of classes
+    remap_mscoco_category: False  # Must be False for custom datasets
 
     train_dataloader:
       type: DataLoader
       dataset:
         type: CocoDetection
-        img_folder: /data/yourdataset/train
-        ann_file: /data/yourdataset/train/train.json
+        img_folder: ./data/your_dataset/images/train  # Relative path from project root
+        ann_file: ./data/your_dataset/annotations/instances_train.json
         return_masks: False
         transforms:
           type: Compose
@@ -211,8 +225,8 @@ To train on your custom dataset, you need to organize it in the COCO format. Fol
       type: DataLoader
       dataset:
         type: CocoDetection
-        img_folder: /data/yourdataset/val
-        ann_file: /data/yourdataset/val/ann.json
+        img_folder: ./data/your_dataset/images/val
+        ann_file: ./data/your_dataset/annotations/instances_val.json
         return_masks: False
         transforms:
           type: Compose
@@ -222,6 +236,22 @@ To train on your custom dataset, you need to organize it in the COCO format. Fol
       drop_last: False
       collate_fn:
         type: BatchImageCollateFunction
+    ```
+
+    **Note:** Use relative paths starting with `./` from the project root directory.
+
+4. **Update Model Configuration File:**
+
+    Modify the `__include__` section in your model config file (e.g., `configs/deimv2/deimv2_dinov3_s_coco.yml`) to use your custom dataset configuration:
+
+    ```yaml
+    __include__: [
+      '../dataset/custom_detection.yml',  # Changed from coco_detection.yml
+      '../runtime.yml',
+      '../base/dataloader.yml',
+      '../base/optimizer.yml',
+      '../base/deimv2.yml',
+    ]
     ```
 
 </details>
@@ -251,6 +281,9 @@ ckpts/
 ```shell
 # for ViT-based variants
 CUDA_VISIBLE_DEVICES=0,1,2,3 torchrun --master_port=7777 --nproc_per_node=4 train.py -c configs/deimv2/deimv2_dinov3_${model}_coco.yml --use-amp --seed=0
+
+# Single-GPU training
+CUDA_VISIBLE_DEVICES=0 python train.py -c configs/deimv2/deimv2_dinov3_s_coco.yml --use-amp --seed=0
 
 # for HGNetv2-based variants
 CUDA_VISIBLE_DEVICES=0,1,2,3 torchrun --master_port=7777 --nproc_per_node=4 train.py -c configs/deimv2/deimv2_hgnetv2_${model}_coco.yml --use-amp --seed=0
