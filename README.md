@@ -99,9 +99,9 @@
 ### Setup
 
 ```shell
-conda create -n deimv2 python=3.11 -y
-conda activate deimv2
-pip install -r requirements.txt
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv sync
+source .venv/bin/activate
 ```
 
 
@@ -258,11 +258,25 @@ To train on your custom dataset, you need to organize it in the COCO format. Fol
 
 ### Backbone Checkpoints
 
-For DINOv3 S and S+, download them following the guide in https://github.com/facebookresearch/dinov3
+DINOv3 is the ViT-based backbone (think "EfficientNet" in the CNN world) that powers the S, M, L, and X variants of DEIMv2. Whenever you pick one of those models you must download the corresponding DINOv3 weights ahead of time and place them under `./ckpts/`. Lightweight variants such as Atto, Femto, Pico, and N rely on the CNN-based `hgnetv2` backbone, so they work out of the box without any extra downloads.
 
-For our distilled ViT-Tiny and ViT-Tiny+, you can download them from [ViT-Tiny](https://drive.google.com/file/d/1YMTq_woOLjAcZnHSYNTsNg7f0ahj5LPs/view?usp=sharing) and [ViT-Tiny+](https://drive.google.com/file/d/1COHfjzq5KfnEaXTluVGEOMdhpuVcG6Jt/view?usp=sharing).
+To confirm which file you need, open the model config linked in the Model Zoo (`config` column) and check the `DINOv3STAs.weights_path` entry. That filename is the checkpoint you should download and copy into `./ckpts/`.
 
-Then place them into ./ckpts as:
+- DINOv3 S and S+: follow the instructions in https://github.com/facebookresearch/dinov3.
+- Distilled ViT-Tiny backbones: [ViT-Tiny](https://drive.google.com/file/d/1YMTq_woOLjAcZnHSYNTsNg7f0ahj5LPs/view?usp=sharing), [ViT-Tiny+](https://drive.google.com/file/d/1COHfjzq5KfnEaXTluVGEOMdhpuVcG6Jt/view?usp=sharing).
+
+Example from `configs/deimv2/deimv2_dinov3_s_coco.yml` (S size):
+
+```yaml
+DINOv3STAs:
+  name: vit_tiny
+  embed_dim: 192
+  weights_path: ./ckpts/vitt_distill.pt  # download and place this file under ckpts/
+  interaction_indexes: [5,8,11]
+  num_heads: 3
+```
+
+After downloading, the directory should look like:
 
 ```shell
 ckpts/
