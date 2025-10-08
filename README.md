@@ -258,7 +258,16 @@ To train on your custom dataset, you need to organize it in the COCO format. Fol
 
 ### Backbone Checkpoints
 
-DINOv3 is the ViT-based backbone (think "EfficientNet" in the CNN world) that powers the S, M, L, and X variants of DEIMv2. Whenever you pick one of those models you must download the corresponding DINOv3 weights ahead of time and place them under `./ckpts/`. Lightweight variants such as Atto, Femto, Pico, and N rely on the CNN-based `hgnetv2` backbone, so they work out of the box without any extra downloads.
+DINOv3 is the ViT-based backbone (think "EfficientNet" in the CNN world) that powers the S, M, L, and X variants of DEIMv2. Whenever you pick one of those models you must download the corresponding DINOv3 weights ahead of time and place them under `./ckpts/`. Lightweight variants such as Atto, Femto, Pico, and N rely on the CNN-based `hgnetv2` backbone. When you train them in a distributed setup (`torchrun`/`torch.distributed`), the stage-1 HGNetv2 weights are downloaded on the fly; however, **single-GPU runs (plain `python train.py`) require that you place the checkpoint locally in advance**:
+
+```shell
+mkdir -p weight/hgnetv2
+# pick the variant that matches HGNetv2.name in your config (B0, B1, ...)
+wget -O weight/hgnetv2/PPHGNetV2_B0_stage1.pth \
+  https://github.com/Peterande/storage/releases/download/dfinev1.0/PPHGNetV2_B0_stage1.pth
+```
+
+Replace `B0` with `B1`, `B2`, and so on if you switch to a different HGNetv2 variant.
 
 To confirm which file you need, open the model config linked in the Model Zoo (`config` column) and check the `DINOv3STAs.weights_path` entry. That filename is the checkpoint you should download and copy into `./ckpts/`.
 
