@@ -500,7 +500,7 @@ pip install -r tools/inference/requirements.txt
 
 Inference on images and videos is now supported.
 ```shell
-python tools/inference/onnx_inf.py --onnx model.onnx --input image.jpg  # video.mp4
+python tools/inference/onnx_inf.py --onnx model.onnx --input image.jpg  --model-size s
 python tools/inference/trt_inf.py --trt model.engine --input image.jpg
 python tools/inference/torch_inf.py -c configs/deimv2/deimv2_dinov3_${model}_coco.yml -r model.pth --input image.jpg --device cuda:0
 ```
